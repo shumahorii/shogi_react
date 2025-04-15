@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import './App.css';
 import { createInitialBoard, Square as SquareType } from './models/BoardState';
-import { Piece, promote, shouldPromote, getMovablePositions } from './models/Piece';
+import {
+  Piece,
+  promote,
+  shouldPromote,
+  getMovablePositions
+} from './models/Piece';
 import Board from './components/Board';
 import PromotionModal from './components/PromotionModal';
 
@@ -13,11 +18,61 @@ const App: React.FC = () => {
     to: [number, number];
     piece: Piece;
   } | null>(null);
+  const [capturedPieces, setCapturedPieces] = useState<Map<string, number>>(new Map());
+  const [selectedHandPiece, setSelectedHandPiece] = useState<string | null>(null);
+
+  const getOriginalType = (type: string): string => {
+    const reverseMap: Record<string, string> = {
+      'と': '歩',
+      '成銀': '銀',
+      '成桂': '桂',
+      '馬': '角',
+      '龍': '飛',
+    };
+    return reverseMap[type] || type;
+  };
+
+  const capturePiece = (captured: Piece) => {
+    const type = getOriginalType(captured.type);
+    const updated = new Map(capturedPieces);
+    updated.set(type, (updated.get(type) || 0) + 1);
+    setCapturedPieces(updated);
+  };
+
+  const applyMove = (from: [number, number], to: [number, number], piece: Piece) => {
+    const newBoard = board.map(r => [...r]);
+
+    const target = board[to[0]][to[1]];
+    if (target && target.owner !== piece.owner) {
+      capturePiece(target);
+    }
+
+    newBoard[to[0]][to[1]] = piece;
+    newBoard[from[0]][from[1]] = null;
+    setBoard(newBoard);
+    setSelectedPosition(null);
+    setPromotionChoice(null);
+    setSelectedHandPiece(null);
+  };
 
   const handleClick = (row: number, col: number) => {
     const clicked = board[row][col];
+    if (promotionChoice) return;
 
-    if (promotionChoice) return; // 成り選択中は操作を無効化
+    // 持ち駒を打つ
+    if (selectedHandPiece && !clicked) {
+      const newBoard = board.map(r => [...r]);
+      newBoard[row][col] = { type: selectedHandPiece, owner: 'black' };
+
+      const updated = new Map(capturedPieces);
+      updated.set(selectedHandPiece, (updated.get(selectedHandPiece) || 0) - 1);
+      if (updated.get(selectedHandPiece) === 0) updated.delete(selectedHandPiece);
+
+      setBoard(newBoard);
+      setCapturedPieces(updated);
+      setSelectedHandPiece(null);
+      return;
+    }
 
     if (selectedPosition) {
       const [fromRow, fromCol] = selectedPosition;
@@ -42,16 +97,13 @@ const App: React.FC = () => {
       setSelectedPosition(null);
     } else if (clicked && clicked.owner === 'black') {
       setSelectedPosition([row, col]);
+      setSelectedHandPiece(null);
     }
   };
 
-  const applyMove = (from: [number, number], to: [number, number], piece: Piece) => {
-    const newBoard = board.map(r => [...r]);
-    newBoard[to[0]][to[1]] = piece;
-    newBoard[from[0]][from[1]] = null;
-    setBoard(newBoard);
+  const handleHandClick = (type: string) => {
+    setSelectedHandPiece(type);
     setSelectedPosition(null);
-    setPromotionChoice(null);
   };
 
   const movablePositions =
@@ -67,6 +119,19 @@ const App: React.FC = () => {
   return (
     <div className="app-container">
       <h1 className="title">将棋ゲーム</h1>
+
+      <div className="captured-area">
+        {[...capturedPieces.entries()].map(([type, count]) => (
+          <button
+            key={type}
+            className={`hand-piece ${selectedHandPiece === type ? 'selected' : ''}`}
+            onClick={() => handleHandClick(type)}
+          >
+            {type} ×{count}
+          </button>
+        ))}
+      </div>
+
       <Board
         board={board}
         selectedPosition={selectedPosition}

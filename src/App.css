@@ -69,3 +69,20 @@
 .promotion-modal button {
   margin: 0 8px;
 }
+
+.captured-area {
+  margin-bottom: 16px;
+  padding: 8px;
+}
+
+.hand-piece {
+  margin: 4px;
+  padding: 6px 10px;
+  font-size: 16px;
+  border: 1px solid #999;
+  border-radius: 4px;
+}
+
+.hand-piece.selected {
+  background-color: #cce5ff;
+}
