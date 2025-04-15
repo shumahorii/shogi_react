@@ -28,6 +28,8 @@ const App: React.FC = () => {
   const [selectedHandPiece, setSelectedHandPiece] = useState<string | null>(null);
   // ゲーム終了状態（trueなら何も操作できない）
   const [isGameOver, setIsGameOver] = useState(false);
+  const [isInCheckNow, setIsInCheckNow] = useState(false);
+
 
   /**
  * 盤面上に指定プレイヤーの「玉」が存在するかをチェックする
@@ -39,6 +41,39 @@ const App: React.FC = () => {
   const hasKing = (board: Square[][], player: 'black' | 'white'): boolean => {
     return board.some(row =>
       row.some(square => square?.owner === player && square.type === '玉')
+    );
+  };
+
+  /**
+   * 指定されたプレイヤー（'black' または 'white'）が王手されているかを判定する関数
+   *
+   * @param board 現在の盤面（9×9 の二次元配列）
+   * @param player 調べたいプレイヤー（'black' か 'white'）
+   * @returns 王手状態であれば true、そうでなければ false
+   */
+  const isInCheck = (board: Square[][], player: 'black' | 'white'): boolean => {
+    // プレイヤーの「玉」の位置を探す。
+    // flatMap + map によって [行, 列] を見つけ、見つからなければ null
+    const kingPos = board.flatMap((row, r) =>
+      row.map((square, c) =>
+        square?.owner === player && square.type === '玉' ? [r, c] : null // 自分の玉なら位置を返す
+      )
+    ).find(pos => pos !== null); // 最初に見つかった玉の位置を取得
+
+    // 玉が見つからない場合（例：すでに取られている）は王手状態ではないとする
+    if (!kingPos) return false;
+
+    // 玉の位置を取得（行と列）
+    const [kr, kc] = kingPos;
+
+    // 敵の全ての駒について、玉に対して攻撃可能かをチェックする
+    return board.some((row, r) =>
+      row.some((square, c) =>
+        square && square.owner !== player && // 敵の駒であることを確認し
+        getMovablePositions(square, r, c, board).some(
+          ([tr, tc]) => tr === kr && tc === kc // その駒が玉の位置を攻撃可能かを調べる
+        )
+      )
     );
   };
 
@@ -140,6 +175,10 @@ const App: React.FC = () => {
     setPromotionChoice(null);
     setSelectedHandPiece(null);
     setTurn(piece.owner === 'black' ? 'white' : 'black');
+
+    // 王手チェック
+    setIsInCheckNow(isInCheck(newBoard, piece.owner === 'black' ? 'white' : 'black'));
+
   };
 
 
@@ -159,8 +198,8 @@ const App: React.FC = () => {
     if (turn === 'white') {
       setTimeout(() => {
         // まず盤面上の駒を使った通常の移動を試みる
-        // const move = getRandomComputerMove(board);
-        const move = getSmartComputerMove(board);
+        const move = getRandomComputerMove(board);
+        // const move = getSmartComputerMove(board);
 
         if (move) {
           applyMove(move.from, move.to, move.piece);
@@ -238,6 +277,12 @@ const App: React.FC = () => {
             )
           }
         />
+      )}
+
+      {isInCheckNow && (
+        <div className="check-banner">
+          <span>王手！</span>
+        </div>
       )}
     </div>
   );
