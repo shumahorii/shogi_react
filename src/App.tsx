@@ -61,6 +61,17 @@ const App: React.FC = () => {
 
     // 持ち駒を打つ
     if (selectedHandPiece && !clicked) {
+      // 二歩チェック
+      if (
+        selectedHandPiece === '歩' &&
+        board.some(row => {
+          const square = row[col];
+          return square?.type === '歩' && square.owner === 'black';
+        })
+      ) {
+        alert('同じ列に2枚目の歩は打てません（二歩禁止）');
+        return;
+      }
       const newBoard = board.map(r => [...r]);
       newBoard[row][col] = { type: selectedHandPiece, owner: 'black' };
 
@@ -109,11 +120,11 @@ const App: React.FC = () => {
   const movablePositions =
     selectedPosition && board[selectedPosition[0]][selectedPosition[1]]
       ? getMovablePositions(
-          board[selectedPosition[0]][selectedPosition[1]]!,
-          selectedPosition[0],
-          selectedPosition[1],
-          board
-        )
+        board[selectedPosition[0]][selectedPosition[1]]!,
+        selectedPosition[0],
+        selectedPosition[1],
+        board
+      )
       : [];
 
   return (
