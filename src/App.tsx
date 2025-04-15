@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { createInitialBoard, Square as SquareType } from './models/BoardState';
+import { createInitialBoard, Square, Square as SquareType } from './models/BoardState';
 import { Piece, promote, shouldPromote, getMovablePositions } from './models/Piece';
-import { getSmartComputerMove } from './ai/ComputerPlayer';
+import { getSmartComputerDrop, getSmartComputerMove, getRandomComputerMove } from './ai/ComputerPlayer';
 import Board from './components/Board';
 import PromotionModal from './components/PromotionModal';
 import HandArea from './components/HandArea';
@@ -26,12 +26,27 @@ const App: React.FC = () => {
   const [capturedPiecesWhite, setCapturedPiecesWhite] = useState<Map<string, number>>(new Map());
   // 盤上に打つために選択中の持ち駒の種類
   const [selectedHandPiece, setSelectedHandPiece] = useState<string | null>(null);
+  // ゲーム終了状態（trueなら何も操作できない）
+  const [isGameOver, setIsGameOver] = useState(false);
+
+  /**
+ * 盤面上に指定プレイヤーの「玉」が存在するかをチェックする
+ *
+ * @param board 現在の盤面
+ * @param player 調べたいプレイヤー（'black' | 'white'）
+ * @returns 玉が存在すれば true、取られていれば false
+ */
+  const hasKing = (board: Square[][], player: 'black' | 'white'): boolean => {
+    return board.some(row =>
+      row.some(square => square?.owner === player && square.type === '玉')
+    );
+  };
 
   /**
    * マスをクリックしたときの処理（駒の移動、持ち駒の打ちなど）
    */
   const handleClick = (row: number, col: number) => {
-    if (turn !== 'black' || promotionChoice) return;
+    if (isGameOver || turn !== 'black' || promotionChoice) return;
 
     const clicked = board[row][col];
 
@@ -91,7 +106,7 @@ const App: React.FC = () => {
     const newBoard = board.map(r => [...r]);
     const captured = board[to[0]][to[1]];
 
-    // 相手の駒を取ったとき、持ち駒に加える
+    // 駒を取ったら持ち駒に追加
     if (captured && captured.owner !== piece.owner) {
       const reverseMap: Record<string, string> = {
         'と': '歩', '成銀': '銀', '成桂': '桂', '馬': '角', '龍': '飛',
@@ -104,34 +119,71 @@ const App: React.FC = () => {
       setter(updated);
     }
 
+    // 駒の移動
     newBoard[to[0]][to[1]] = piece;
     newBoard[from[0]][from[1]] = null;
-
     setBoard(newBoard);
+
+    // 玉が取られたか判定
+    if (!hasKing(newBoard, 'black')) {
+      alert('あなたの負けです（玉が取られました）');
+      setIsGameOver(true);
+      return;
+    } else if (!hasKing(newBoard, 'white')) {
+      alert('あなたの勝ちです（相手の玉を取りました）');
+      setIsGameOver(true);
+      return;
+    }
+
+    // 通常の状態更新
     setSelectedPosition(null);
     setPromotionChoice(null);
     setSelectedHandPiece(null);
     setTurn(piece.owner === 'black' ? 'white' : 'black');
   };
 
+
   // 選択中の駒が移動可能なマスの一覧
   const movablePositions =
     selectedPosition && board[selectedPosition[0]][selectedPosition[1]]
       ? getMovablePositions(
-          board[selectedPosition[0]][selectedPosition[1]]!,
-          selectedPosition[0],
-          selectedPosition[1],
-          board
-        )
+        board[selectedPosition[0]][selectedPosition[1]]!,
+        selectedPosition[0],
+        selectedPosition[1],
+        board
+      )
       : [];
 
-  // AIの手番になったとき、自動で指す処理
+  // 白（AI）の手番になったとき、自動で指す処理（盤上の移動 or 持ち駒の打ち）
   useEffect(() => {
     if (turn === 'white') {
       setTimeout(() => {
+        // まず盤面上の駒を使った通常の移動を試みる
+        // const move = getRandomComputerMove(board);
         const move = getSmartComputerMove(board);
-        if (move) applyMove(move.from, move.to, move.piece);
-      }, 500);
+
+        if (move) {
+          applyMove(move.from, move.to, move.piece);
+        } else {
+          // 移動できる手がなければ、持ち駒を打てる場所を探す
+          const drop = getSmartComputerDrop(board, capturedPiecesWhite);
+          if (drop) {
+            // 盤面に持ち駒を配置
+            const newBoard = board.map(r => [...r]);
+            newBoard[drop.to[0]][drop.to[1]] = { type: drop.type, owner: 'white' };
+            setBoard(newBoard);
+
+            // 使用した駒を持ち駒から1つ減らす
+            const updated = new Map(capturedPiecesWhite);
+            updated.set(drop.type, updated.get(drop.type)! - 1);
+            if (updated.get(drop.type)! <= 0) updated.delete(drop.type);
+            setCapturedPiecesWhite(updated);
+
+            // 手番をプレイヤーに交代
+            setTurn('black');
+          }
+        }
+      }, 500); // 少し待ってから動作させて自然な思考感を出す
     }
   }, [turn]);
 
@@ -144,7 +196,7 @@ const App: React.FC = () => {
         <HandArea
           capturedPieces={capturedPiecesWhite}
           selectedHandPiece={null}
-          onSelect={() => {}}
+          onSelect={() => { }}
           position="left"
         />
 

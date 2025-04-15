@@ -204,3 +204,46 @@ const isThreatenedByBlack = (board: Square[][], row: number, col: number): boole
     }
     return false;
 };
+
+/**
+ * コンピュータ（後手）が持ち駒を盤面に打つための候補を探索する。
+ * 現在の盤面と持ち駒の内容を元に、打てる場所を探して返す。
+ *
+ * @param board 現在の盤面（9x9の二次元配列）
+ * @param capturedPiecesWhite コンピュータが保持している持ち駒（Map<駒の種類, 個数>）
+ * @returns 打つ候補があれば {to: [行, 列], type: 駒の種類}、なければ null
+ */
+export const getSmartComputerDrop = (
+    board: Square[][],
+    capturedPieces: Map<string, number>
+): { to: [number, number]; type: string } | null => {
+    // すべての持ち駒の種類について探索する
+    for (const [type, count] of capturedPieces.entries()) {
+        if (count <= 0) continue; // 持ち駒が0ならスキップ
+
+        // 盤面全体（9×9）を探索
+        for (let row = 0; row < 9; row++) {
+            for (let col = 0; col < 9; col++) {
+                // 空いているマスにのみ打てる
+                if (board[row][col] === null) {
+                    // 二歩禁止：同じ列にすでに自分の歩がある場合は打てない
+                    if (
+                        type === '歩' &&
+                        board.some(r => r[col]?.type === '歩' && r[col]?.owner === 'white')
+                    ) {
+                        continue;
+                    }
+
+                    // 桂馬・香車は最終段（9段目）に打てない（移動できないため）
+                    if ((type === '桂' || type === '香') && row === 8) continue;
+
+                    // 条件を満たす打ち場所があれば返す
+                    return { to: [row, col], type };
+                }
+            }
+        }
+    }
+
+    // すべての持ち駒を探索しても打てる場所がなければ null
+    return null;
+};
