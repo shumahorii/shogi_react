@@ -86,3 +86,18 @@
 .hand-piece.selected {
   background-color: #cce5ff;
 }
+
+.board-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.hand-area.left {
+  align-items: flex-start;
+}
+
+.hand-area.right {
+  align-items: flex-start;
+}
