@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import { createInitialBoard, Square as SquareType } from './models/BoardState';
 import {
@@ -20,6 +20,7 @@ const App: React.FC = () => {
   } | null>(null);
   const [capturedPieces, setCapturedPieces] = useState<Map<string, number>>(new Map());
   const [selectedHandPiece, setSelectedHandPiece] = useState<string | null>(null);
+  const [turn, setTurn] = useState<'black' | 'white'>('black');
 
   const getOriginalType = (type: string): string => {
     const reverseMap: Record<string, string> = {
@@ -44,7 +45,10 @@ const App: React.FC = () => {
 
     const target = board[to[0]][to[1]];
     if (target && target.owner !== piece.owner) {
-      capturePiece(target);
+      if (piece.owner === 'black') {
+        capturePiece(target);
+      }
+      // コンピュータが取った駒は今回は無視
     }
 
     newBoard[to[0]][to[1]] = piece;
@@ -53,9 +57,12 @@ const App: React.FC = () => {
     setSelectedPosition(null);
     setPromotionChoice(null);
     setSelectedHandPiece(null);
+    setTurn(piece.owner === 'black' ? 'white' : 'black');
   };
 
   const handleClick = (row: number, col: number) => {
+    if (turn !== 'black') return; // 自分のターンでなければ無効
+
     const clicked = board[row][col];
     if (promotionChoice) return;
 
@@ -72,6 +79,7 @@ const App: React.FC = () => {
         alert('同じ列に2枚目の歩は打てません（二歩禁止）');
         return;
       }
+
       const newBoard = board.map(r => [...r]);
       newBoard[row][col] = { type: selectedHandPiece, owner: 'black' };
 
@@ -82,6 +90,7 @@ const App: React.FC = () => {
       setBoard(newBoard);
       setCapturedPieces(updated);
       setSelectedHandPiece(null);
+      setTurn('white');
       return;
     }
 
@@ -117,14 +126,48 @@ const App: React.FC = () => {
     setSelectedPosition(null);
   };
 
+  const makeComputerMove = () => {
+    const allMoves: {
+      from: [number, number];
+      to: [number, number];
+      piece: Piece;
+    }[] = [];
+
+    board.forEach((row, r) =>
+      row.forEach((square, c) => {
+        if (square && square.owner === 'white') {
+          const moves = getMovablePositions(square, r, c, board);
+          moves.forEach(([toR, toC]) => {
+            allMoves.push({
+              from: [r, c],
+              to: [toR, toC],
+              piece: square,
+            });
+          });
+        }
+      })
+    );
+
+    if (allMoves.length === 0) return;
+
+    const move = allMoves[Math.floor(Math.random() * allMoves.length)];
+    applyMove(move.from, move.to, move.piece);
+  };
+
+  useEffect(() => {
+    if (turn === 'white') {
+      setTimeout(makeComputerMove, 500); // 0.5秒後に実行
+    }
+  }, [turn]);
+
   const movablePositions =
     selectedPosition && board[selectedPosition[0]][selectedPosition[1]]
       ? getMovablePositions(
-        board[selectedPosition[0]][selectedPosition[1]]!,
-        selectedPosition[0],
-        selectedPosition[1],
-        board
-      )
+          board[selectedPosition[0]][selectedPosition[1]]!,
+          selectedPosition[0],
+          selectedPosition[1],
+          board
+        )
       : [];
 
   return (
