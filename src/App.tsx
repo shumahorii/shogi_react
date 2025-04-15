@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { createInitialBoard, Square as SquareType } from './models/BoardState';
 import { Piece, promote, shouldPromote, getMovablePositions } from './models/Piece';
-import { getRandomComputerMove } from './ai/ComputerPlayer';
+import { getRandomComputerMove, getSmartComputerMove } from './ai/ComputerPlayer';
 import Board from './components/Board';
 import PromotionModal from './components/PromotionModal';
 import HandArea from './components/HandArea';
@@ -136,7 +136,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (turn === 'white') {
       setTimeout(() => {
-        const move = getRandomComputerMove(board); // ランダムに1手生成
+        const move = getSmartComputerMove(board);
         if (move) applyMove(move.from, move.to, move.piece); // 駒を動かす
       }, 500); // 0.5秒ディレイで自然な感じに
     }
