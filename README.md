@@ -1,54 +1,42 @@
-# React + TypeScript + Vite
+# 将棋ゲーム（React + TypeScript）
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+日本の伝統的ボードゲーム「将棋」をブラウザ上で楽しめるアプリです。  
+プレイヤーは先手（黒）として操作し、後手（白）は AI（コンピュータ）が自動で対局を行います。
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🎮 主な機能
 
-## Expanding the ESLint configuration
+- 9×9 の将棋盤を再現
+- 駒の移動ルールに完全準拠（歩・銀・金・角・飛など）
+- 成り・任意成り・持ち駒機能に対応
+- 二歩禁止、最下段への桂・香の打ち不可チェック
+- コンピュータは駒を動かすだけでなく持ち駒を打つ戦略にも対応
+- 相手や自分の「玉」が取られたらゲーム終了
+- 王手時に「王手！」の表示
+- 勝敗が UI に明示され、リスタートも可能
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 🛠 技術スタック
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- React
+- TypeScript
+- Vite
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## 🚀 起動方法
+
+```bash
+# 1. プロジェクトをクローン
+git clone https://github.com/yourname/shogi-game.git
+
+# 2. ディレクトリに移動
+cd shogi-game
+
+# 3. 依存関係をインストール
+npm install
+
+# 4. 開発サーバーを起動
+npm run dev

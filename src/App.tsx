@@ -178,7 +178,6 @@ const App: React.FC = () => {
 
     // 王手チェック
     setIsInCheckNow(isInCheck(newBoard, piece.owner === 'black' ? 'white' : 'black'));
-
   };
 
 
