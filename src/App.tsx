@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { createInitialBoard, Square, Square as SquareType } from './models/BoardState';
 import { Piece, promote, shouldPromote, getMovablePositions } from './models/Piece';
-import { getSmartComputerDrop, getSmartComputerMove, getRandomComputerMove } from './ai/ComputerPlayer';
+import { getSmartComputerDrop, getSmartComputerMove } from './ai/ComputerPlayer';
 import Board from './components/Board';
 import PromotionModal from './components/PromotionModal';
 import HandArea from './components/HandArea';
@@ -28,8 +28,6 @@ const App: React.FC = () => {
   const [selectedHandPiece, setSelectedHandPiece] = useState<string | null>(null);
   // ゲーム終了状態（trueなら何も操作できない）
   const [isGameOver, setIsGameOver] = useState(false);
-  const [isInCheckNow, setIsInCheckNow] = useState(false);
-
 
   /**
  * 盤面上に指定プレイヤーの「玉」が存在するかをチェックする
@@ -159,6 +157,12 @@ const App: React.FC = () => {
     newBoard[from[0]][from[1]] = null;
     setBoard(newBoard);
 
+    // 通常の状態更新
+    setSelectedPosition(null);
+    setPromotionChoice(null);
+    setSelectedHandPiece(null);
+    setTurn(piece.owner === 'black' ? 'white' : 'black');
+
     // 玉が取られたか判定
     if (!hasKing(newBoard, 'black')) {
       alert('あなたの負けです（玉が取られました）');
@@ -170,14 +174,10 @@ const App: React.FC = () => {
       return;
     }
 
-    // 通常の状態更新
-    setSelectedPosition(null);
-    setPromotionChoice(null);
-    setSelectedHandPiece(null);
-    setTurn(piece.owner === 'black' ? 'white' : 'black');
-
     // 王手チェック
-    setIsInCheckNow(isInCheck(newBoard, piece.owner === 'black' ? 'white' : 'black'));
+    if(isInCheck(newBoard, piece.owner === 'black' ? 'white' : 'black')){
+      alert("王手です");
+    }
   };
 
 
@@ -197,8 +197,8 @@ const App: React.FC = () => {
     if (turn === 'white') {
       setTimeout(() => {
         // まず盤面上の駒を使った通常の移動を試みる
-        const move = getRandomComputerMove(board);
-        // const move = getSmartComputerMove(board);
+        // const move = getRandomComputerMove(board);
+        const move = getSmartComputerMove(board);
 
         if (move) {
           applyMove(move.from, move.to, move.piece);
@@ -276,12 +276,6 @@ const App: React.FC = () => {
             )
           }
         />
-      )}
-
-      {isInCheckNow && (
-        <div className="check-banner">
-          <span>王手！</span>
-        </div>
       )}
     </div>
   );
