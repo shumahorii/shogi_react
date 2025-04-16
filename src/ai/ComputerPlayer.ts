@@ -243,7 +243,6 @@ export const getSmartComputerDrop = (
             }
         }
     }
-
     // すべての持ち駒を探索しても打てる場所がなければ null
     return null;
 };
