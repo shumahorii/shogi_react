@@ -28,6 +28,7 @@ https://shogi-936ab.web.app/
 - React
 - TypeScript
 - Vite
+- Firebase Hosting
 
 ---
 
@@ -38,7 +39,7 @@ https://shogi-936ab.web.app/
 git clone https://github.com/yourname/shogi-game.git
 
 # 2. ディレクトリに移動
-cd shogi-game
+cd shogi_game
 
 # 3. 依存関係をインストール
 npm install
