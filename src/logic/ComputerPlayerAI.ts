@@ -3,50 +3,6 @@ import { Piece } from '../models/Piece';
 import { getMovablePositions } from '../logic/pieceLogic';
 
 /**
- * コンピューターの手（後手）として指すべき手をランダムに1つ選んで返す関数
- * @param board 現在の盤面（二次元配列）
- * @returns 移動前の位置・移動後の位置・動かす駒 を含んだ1手の情報 or 指せる手がない場合は null
- */
-export const getRandomComputerMove = (board: Square[][]): {
-    from: [number, number]; // 駒を動かす元の座標（行, 列）
-    to: [number, number];   // 駒を動かす先の座標（行, 列）
-    piece: Piece;           // 実際に動かす駒の情報
-} | null => {
-    // すべての合法手（コンピューターが指せる手）を格納するリスト
-    const allMoves: {
-        from: [number, number];
-        to: [number, number];
-        piece: Piece;
-    }[] = [];
-
-    // 盤面の全マスを調べる
-    board.forEach((row, r) =>
-        row.forEach((square, c) => {
-            // もしそのマスに「後手（white）の駒」があるなら
-            if (square && square.owner === 'white') {
-                // その駒が現在の位置 (r, c) から動ける合法な座標一覧を取得
-                const moves = getMovablePositions(square, r, c, board);
-
-                // すべての合法な移動先について、1手の情報としてallMovesに追加
-                moves.forEach(([toR, toC]) => {
-                    allMoves.push({
-                        from: [r, c],      // 駒の現在位置
-                        to: [toR, toC],    // 移動先
-                        piece: square      // 駒の情報
-                    });
-                });
-            }
-        })
-    );
-
-    // 指せる手が1つもない場合は null（詰みや手詰まり）
-    if (allMoves.length === 0) return null;
-
-    // 全手の中からランダムに1手を選んで返す
-    return allMoves[Math.floor(Math.random() * allMoves.length)];
-};
-
-/**
  * 駒の種類ごとに重み（価値）を設定する評価テーブル。
  * 高価な駒ほど大きなスコアを持つ。
  */
@@ -87,7 +43,7 @@ const findKing = (board: Square[][], player: 'black' | 'white'): [number, number
 };
 
 /**
- * 指定したマスが後手（white）の攻撃範囲に入っているかを判定する。
+ * 指定したマスがコンピューター（white）の攻撃範囲に入っているかを判定する。
  *
  * @param board 現在の盤面（9x9の二次元配列）
  * @param row 調べたいマスの行番号（0〜8）
@@ -166,8 +122,8 @@ export const getSmartComputerMove = (board: Square[][]): {
                         target && target.owner === 'black' ? pieceValueMap[target.type] || 0 : 0;
 
                     // 評価②：取られにくさ（安全性）
-                    const threatened = isThreatenedByBlack(simulatedBoard, toR, toC);
-                    const safetyBonus = threatened ? -2 : 1;
+                    const isThreatened = isThreatenedByBlack(simulatedBoard, toR, toC);
+                    const safetyBonus = isThreatened ? -2 : 1;
 
                     // 総合スコア
                     const totalScore = captureScore + safetyBonus;
@@ -186,7 +142,7 @@ export const getSmartComputerMove = (board: Square[][]): {
 };
 
 /**
- * 指定したマスが先手（black）の攻撃範囲に入っているかを判定する。
+ * 指定したマスがユーザー（black）の攻撃範囲に入っているかを判定する。
  *
  * @param board 現在の盤面（9x9の二次元配列）
  * @param row 調べたいマスの行番号（0〜8）
@@ -248,4 +204,49 @@ export const getSmartComputerDrop = (
     }
     // すべての持ち駒を探索しても打てる場所がなければ null
     return null;
+};
+
+
+/**
+ * コンピューターの手（後手）として指すべき手をランダムに1つ選んで返す関数
+ * @param board 現在の盤面（二次元配列）
+ * @returns 移動前の位置・移動後の位置・動かす駒 を含んだ1手の情報 or 指せる手がない場合は null
+ */
+export const getRandomComputerMove = (board: Square[][]): {
+    from: [number, number]; // 駒を動かす元の座標（行, 列）
+    to: [number, number];   // 駒を動かす先の座標（行, 列）
+    piece: Piece;           // 実際に動かす駒の情報
+} | null => {
+    // すべての合法手（コンピューターが指せる手）を格納するリスト
+    const allMoves: {
+        from: [number, number];
+        to: [number, number];
+        piece: Piece;
+    }[] = [];
+
+    // 盤面の全マスを調べる
+    board.forEach((row, r) =>
+        row.forEach((square, c) => {
+            // もしそのマスに「後手（white）の駒」があるなら
+            if (square && square.owner === 'white') {
+                // その駒が現在の位置 (r, c) から動ける合法な座標一覧を取得
+                const moves = getMovablePositions(square, r, c, board);
+
+                // すべての合法な移動先について、1手の情報としてallMovesに追加
+                moves.forEach(([toR, toC]) => {
+                    allMoves.push({
+                        from: [r, c],      // 駒の現在位置
+                        to: [toR, toC],    // 移動先
+                        piece: square      // 駒の情報
+                    });
+                });
+            }
+        })
+    );
+
+    // 指せる手が1つもない場合は null（詰みや手詰まり）
+    if (allMoves.length === 0) return null;
+
+    // 全手の中からランダムに1手を選んで返す
+    return allMoves[Math.floor(Math.random() * allMoves.length)];
 };
