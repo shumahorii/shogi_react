@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Square } from '../models/BoardState';
 import { getSmartComputerDrop, getSmartComputerMove } from '../logic/ComputerPlayerAI';
+import { removeCapturedPiece } from '../logic/capturedPieceLogic';
 
 /**
  * コンピュータ（後手）の手番を処理するカスタムフック
@@ -46,9 +47,8 @@ export const useComputerTurn = ({
                         };
                         setBoard(newBoard);
 
-                        const updated = new Map(capturedPiecesWhite);
-                        updated.set(drop.type, (updated.get(drop.type) || 0) - 1);
-                        if (updated.get(drop.type)! <= 0) updated.delete(drop.type);
+                        // 持ち駒を減らす
+                        const updated = removeCapturedPiece(capturedPiecesWhite, drop.type);
                         setCapturedPiecesWhite(updated);
 
                         setTurn('black'); // プレイヤーの番に交代

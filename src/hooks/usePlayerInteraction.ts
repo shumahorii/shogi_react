@@ -2,12 +2,9 @@ import { useCallback } from 'react';
 import { Square } from '../models/BoardState';
 import { Piece } from '../models/Piece';
 import { useGameJudge } from './useGameJudge';
-import { getMovablePositions, shouldPromote, demote } from '../logic/pieceLogic';
+import { getMovablePositions, shouldPromote } from '../logic/pieceLogic';
+import { addCapturedPiece, removeCapturedPiece } from '../logic/capturedPieceLogic';
 
-/**
- * 駒のクリック、移動、持ち駒の打ち処理を担当するカスタムフック
- * App.tsx からロジックを分離し、ユーザー操作に関する責務を一手に引き受ける
- */
 export const usePlayerInteraction = ({
     board,
     setBoard,
@@ -43,63 +40,50 @@ export const usePlayerInteraction = ({
         piece: Piece;
     } | null) => void;
 }) => {
-    // 勝敗・王手判定用フック
+    // 勝敗と王手をチェックするための判定ロジックを含むカスタムフック
     const { checkAndSetGameOver, checkOute } = useGameJudge({ setIsGameOver });
 
     /**
-     * 駒を盤面上で移動させる関数。
-     * 以下の処理をまとめて行う：
-     * - 駒の移動
-     * - 駒を取った場合の処理（持ち駒として追加）
-     * - 盤面更新
-     * - ターンの切り替え
-     * - 勝敗チェック
+     * 駒を盤面上で移動させる処理。
+     * - 盤面の更新
+     * - 駒を取った場合の持ち駒への追加
+     * - 手番の切り替え
+     * - ゲームの終了チェック
      * - 王手チェック
-     *
-     * @param from 移動元の座標 [行, 列]
-     * @param to 移動先の座標 [行, 列]
-     * @param piece 実際に動かす駒の情報
      */
     const applyMove = useCallback(
         (from: [number, number], to: [number, number], piece: Piece) => {
-            // 現在の盤面をディープコピー（元の状態を壊さないように）
             const newBoard = board.map(r => [...r]);
 
-            // 移動先に相手の駒がいるかどうか確認
             const captured = board[to[0]][to[1]];
-
-            // 相手の駒がいた場合は持ち駒に加える
             if (captured && captured.owner !== piece.owner) {
-                // 成った駒は元に戻してから持ち駒にする（例：「と」→「歩」）
-                const type = demote(captured.type);
-
-                // どちらのプレイヤーが取ったかによって、管理対象の持ち駒セットを切り替える
-                const map = piece.owner === 'black' ? capturedPieces : capturedPiecesWhite;
-                const setMap = piece.owner === 'black' ? setCapturedPieces : setCapturedPiecesWhite;
-
-                // Mapをコピーして更新
-                const updated = new Map(map);
-                updated.set(type, (updated.get(type) || 0) + 1); // 個数を加算
-                setMap(updated); // 状態を更新
+                // 駒を取った場合、どちらのプレイヤーかによって正しい持ち駒Mapに追加
+                const type = captured.type;
+                if (piece.owner === 'black') {
+                    const updated = addCapturedPiece(capturedPieces, type);
+                    setCapturedPieces(updated);
+                } else {
+                    const updated = addCapturedPiece(capturedPiecesWhite, type);
+                    setCapturedPiecesWhite(updated);
+                }
             }
 
-            // 駒を盤面上で移動（移動先に配置し、元の位置をnullにする）
+            // 駒の移動を反映
             newBoard[to[0]][to[1]] = piece;
             newBoard[from[0]][from[1]] = null;
-            setBoard(newBoard); // 新しい盤面を反映
+            setBoard(newBoard);
 
-            // UI状態のリセット（選択解除、手駒選択解除、成りモーダル解除）
+            // UI状態のリセット
             setSelectedPosition(null);
             setSelectedHandPiece(null);
             setPromotionChoice(null);
 
-            // ターンを相手側に切り替え（black → white または white → black）
+            // 手番の切り替え
             const nextTurn = piece.owner === 'black' ? 'white' : 'black';
             setTurn(nextTurn);
 
-            // 勝敗のチェック（どちらかの玉が取られていないか）
+            // 勝敗・王手のチェック
             if (!checkAndSetGameOver(newBoard)) {
-                // ゲームが続く場合は王手かどうかもチェックする
                 checkOute(newBoard, nextTurn);
             }
         },
@@ -120,7 +104,10 @@ export const usePlayerInteraction = ({
     );
 
     /**
-     * マスをクリックしたときの処理（持ち駒の打ち or 駒の選択 or 駒の移動）
+     * 盤面上のマスをクリックしたときに呼ばれる処理。
+     * - 駒の選択
+     * - 駒の移動
+     * - 持ち駒の打ち込み
      */
     const handleSquareClick = useCallback(
         (row: number, col: number) => {
@@ -130,7 +117,7 @@ export const usePlayerInteraction = ({
 
             // 持ち駒を打つ処理
             if (selectedHandPiece && !clicked) {
-                // 二歩禁止：同じ列にすでに自分の歩がある場合
+                // 二歩の禁止チェック（同じ列に既に歩がある場合）
                 if (
                     selectedHandPiece === '歩' &&
                     board.some(r => r[col]?.type === '歩' && r[col]?.owner === 'black')
@@ -139,15 +126,16 @@ export const usePlayerInteraction = ({
                     return;
                 }
 
+                // 新しい盤面に反映
                 const newBoard = board.map(r => [...r]);
                 newBoard[row][col] = { type: selectedHandPiece, owner: 'black' };
                 setBoard(newBoard);
 
-                const updated = new Map(capturedPieces);
-                updated.set(selectedHandPiece, (updated.get(selectedHandPiece) || 0) - 1);
-                if (updated.get(selectedHandPiece)! <= 0) updated.delete(selectedHandPiece);
+                // 持ち駒を1つ減らす（removeCapturedPieceを利用）
+                const updated = removeCapturedPiece(capturedPieces, selectedHandPiece);
                 setCapturedPieces(updated);
 
+                // 状態更新
                 setSelectedHandPiece(null);
                 setTurn('white');
                 return;
@@ -161,23 +149,19 @@ export const usePlayerInteraction = ({
                 const isLegal = legalMoves.some(([r, c]) => r === row && c === col);
 
                 if (isLegal) {
-                    // ✅ 修正ポイント：成れる場合だけモーダルを出す
                     if (shouldPromote(piece!, fr, row)) {
-                        setPromotionChoice({
-                            from: [fr, fc],
-                            to: [row, col],
-                            piece: piece!,
-                        });
+                        // 成りモーダル表示
+                        setPromotionChoice({ from: [fr, fc], to: [row, col], piece: piece! });
                     } else {
                         applyMove([fr, fc], [row, col], piece!);
                     }
                 } else {
-                    // 移動できないなら選択解除
+                    // 不正な移動先の場合は選択解除
                     setSelectedPosition(null);
                 }
             }
 
-            // 駒の選択処理（自分の駒をクリックした場合）
+            // 自分の駒をクリックした場合は選択状態に
             else if (clicked?.owner === 'black') {
                 setSelectedPosition([row, col]);
                 setSelectedHandPiece(null);
@@ -200,7 +184,8 @@ export const usePlayerInteraction = ({
     );
 
     /**
-     * 手駒を選択したときの処理
+     * 持ち駒のボタンをクリックしたときの処理。
+     * 手駒を選択状態にし、盤上の駒の選択は解除。
      */
     const handleHandPieceSelect = useCallback(
         (type: string) => {
@@ -210,7 +195,6 @@ export const usePlayerInteraction = ({
         [setSelectedHandPiece, setSelectedPosition]
     );
 
-    // 外部に公開する操作関数たち
     return {
         handleSquareClick,
         handleHandPieceSelect,
