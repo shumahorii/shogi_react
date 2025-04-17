@@ -41,7 +41,8 @@ export const useGameJudge = ({
     const checkOute = useCallback(
         (board: Square[][], player: 'black' | 'white') => {
             if (isInCheck(board, player)) {
-                alert('王手です');
+                const message = player == 'black' ? '相手から王手されました！' : 'あなたの王手です！'
+                alert(message);
             }
         },
         []
