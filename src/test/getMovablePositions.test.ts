@@ -1,6 +1,7 @@
 // テスト対象: getMovablePositions関数（駒ごとの移動可能マスを判定）
-import { getMovablePositions, Piece } from '../models/Piece';
+import { Piece } from '../models/Piece';
 import { Square } from '../models/BoardState';
+import { getMovablePositions } from '../logic/pieceLogic';
 
 describe('getMovablePositions', () => {
     /**

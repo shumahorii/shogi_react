@@ -4,7 +4,7 @@ import Board from './components/Board';
 import HandArea from './components/HandArea';
 import PromotionModal from './components/PromotionModal';
 import { createInitialBoard, Square } from './models/BoardState';
-import { getMovablePositions, promote } from './models/Piece';
+import { getMovablePositions, promote } from './logic/pieceLogic';
 import { usePlayerInteraction } from './hooks/usePlayerInteraction';
 import { usePromotion } from './hooks/usePromotion';
 import { useComputerTurn } from './hooks/useComputerTurn';
@@ -52,8 +52,7 @@ const App: React.FC = () => {
    * ゲームが終了しているかどうかを表すフラグ（true なら操作不可）
    * 玉が取られたときに true となる
    */
-  const [isGameOver, setIsGameOver] = useState(false);
-
+  const [isGameOver, setIsGameOver] = useState<boolean>(false);
 
   // 成り選択状態とその setter（実際の成り処理は App.tsx 側で実行）
   const { promotionChoice, setPromotionChoice } = usePromotion();

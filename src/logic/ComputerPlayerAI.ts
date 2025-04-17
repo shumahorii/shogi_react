@@ -1,5 +1,6 @@
 import { Square } from '../models/BoardState';
-import { getMovablePositions, Piece } from '../models/Piece';
+import { Piece } from '../models/Piece';
+import { getMovablePositions } from '../logic/pieceLogic';
 
 /**
  * コンピューターの手（後手）として指すべき手をランダムに1つ選んで返す関数

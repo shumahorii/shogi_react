@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Square } from '../models/BoardState';
-import { getSmartComputerDrop, getSmartComputerMove } from '../ai/ComputerPlayer';
+import { getSmartComputerDrop, getSmartComputerMove } from '../logic/ComputerPlayerAI';
 
 /**
  * コンピュータ（後手）の手番を処理するカスタムフック

@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { Square } from '../models/BoardState';
-import { Piece, getMovablePositions, shouldPromote } from '../models/Piece';
+import { Piece } from '../models/Piece';
 import { useGameJudge } from './useGameJudge';
+import { getMovablePositions, shouldPromote, demote } from '../logic/pieceLogic';
 
 /**
  * 駒のクリック、移動、持ち駒の打ち処理を担当するカスタムフック
@@ -46,43 +47,60 @@ export const usePlayerInteraction = ({
     const { checkAndSetGameOver, checkOute } = useGameJudge({ setIsGameOver });
 
     /**
-     * 駒の移動処理（盤面更新、持ち駒追加、ターン切り替え、王手・勝敗チェック）
+     * 駒を盤面上で移動させる関数。
+     * 以下の処理をまとめて行う：
+     * - 駒の移動
+     * - 駒を取った場合の処理（持ち駒として追加）
+     * - 盤面更新
+     * - ターンの切り替え
+     * - 勝敗チェック
+     * - 王手チェック
+     *
+     * @param from 移動元の座標 [行, 列]
+     * @param to 移動先の座標 [行, 列]
+     * @param piece 実際に動かす駒の情報
      */
     const applyMove = useCallback(
         (from: [number, number], to: [number, number], piece: Piece) => {
+            // 現在の盤面をディープコピー（元の状態を壊さないように）
             const newBoard = board.map(r => [...r]);
+
+            // 移動先に相手の駒がいるかどうか確認
             const captured = board[to[0]][to[1]];
 
+            // 相手の駒がいた場合は持ち駒に加える
             if (captured && captured.owner !== piece.owner) {
-                const reverseMap: Record<string, string> = {
-                    'と': '歩',
-                    '成銀': '銀',
-                    '成桂': '桂',
-                    '馬': '角',
-                    '龍': '飛',
-                };
-                const type = reverseMap[captured.type] || captured.type;
+                // 成った駒は元に戻してから持ち駒にする（例：「と」→「歩」）
+                const type = demote(captured.type);
+
+                // どちらのプレイヤーが取ったかによって、管理対象の持ち駒セットを切り替える
                 const map = piece.owner === 'black' ? capturedPieces : capturedPiecesWhite;
                 const setMap = piece.owner === 'black' ? setCapturedPieces : setCapturedPiecesWhite;
+
+                // Mapをコピーして更新
                 const updated = new Map(map);
-                updated.set(type, (updated.get(type) || 0) + 1);
-                setMap(updated);
+                updated.set(type, (updated.get(type) || 0) + 1); // 個数を加算
+                setMap(updated); // 状態を更新
             }
 
+            // 駒を盤面上で移動（移動先に配置し、元の位置をnullにする）
             newBoard[to[0]][to[1]] = piece;
             newBoard[from[0]][from[1]] = null;
-            setBoard(newBoard);
+            setBoard(newBoard); // 新しい盤面を反映
 
+            // UI状態のリセット（選択解除、手駒選択解除、成りモーダル解除）
             setSelectedPosition(null);
             setSelectedHandPiece(null);
             setPromotionChoice(null);
 
+            // ターンを相手側に切り替え（black → white または white → black）
             const nextTurn = piece.owner === 'black' ? 'white' : 'black';
             setTurn(nextTurn);
 
-            // 勝敗チェック（玉が取られていないか）
+            // 勝敗のチェック（どちらかの玉が取られていないか）
             if (!checkAndSetGameOver(newBoard)) {
-                checkOute(newBoard, nextTurn); // 王手チェック
+                // ゲームが続く場合は王手かどうかもチェックする
+                checkOute(newBoard, nextTurn);
             }
         },
         [
