@@ -14,6 +14,7 @@ export const promote = (piece: Piece): Piece => {
         '桂': '成桂',
         '角': '馬',
         '飛': '龍',
+        '香': '成香'
     };
     return {
         type: map[piece.type] || piece.type,
@@ -34,6 +35,7 @@ export const demote = (type: string): string => {
         '成桂': '桂',
         '馬': '角',
         '龍': '飛',
+        '成香': '香'
     };
     return reverseMap[type] || type;
 };
@@ -53,7 +55,7 @@ export const shouldPromote = (
 ): boolean => {
     const zone = piece.owner === 'black' ? [0, 1, 2] : [6, 7, 8];
     return (
-        ['歩', '銀', '桂', '角', '飛'].includes(piece.type) &&
+        ['歩', '銀', '桂', '角', '飛', '香'].includes(piece.type) &&
         (zone.includes(fromRow) || zone.includes(toRow))
     );
 };
@@ -97,6 +99,7 @@ export const getMovablePositions = (
         case '金':
         case 'と':
         case '成銀':
+        case '成香':
         case '成桂':
             goldLike();
             break;
@@ -126,6 +129,16 @@ export const getMovablePositions = (
             if (isInside(r1, col + 1)) moves.push([r1, col + 1]);
             break;
 
+        case '香':
+            // 進行方向に直線的に進む（途中に駒があれば止まる）
+            for (let i = 1; i < 9; i++) {
+                const r = row + i * dir;
+                if (!isInside(r, col)) break;
+                moves.push([r, col]);
+                if (board[r][col]) break; // 駒にぶつかったら止める
+            }
+            break;
+
         case '角':
         case '馬':
             [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(([dr, dc]) => {
@@ -134,7 +147,7 @@ export const getMovablePositions = (
                     const c = col + dc * i;
                     if (!isInside(r, c)) break;
                     moves.push([r, c]);
-                    if (board[r][c]) break;
+                    if (board[r][c]) break; // 駒にぶつかったら止める
                 }
             });
             if (piece.type === '馬') goldLike();
@@ -148,7 +161,7 @@ export const getMovablePositions = (
                     const c = col + dc * i;
                     if (!isInside(r, c)) break;
                     moves.push([r, c]);
-                    if (board[r][c]) break;
+                    if (board[r][c]) break; // 駒にぶつかったら止める
                 }
             });
             if (piece.type === '龍') {

@@ -57,6 +57,8 @@ const pieceValueMap: Record<string, number> = {
     '成銀': 4,
     '桂': 3,
     '成桂': 4,
+    '香': 3,
+    '成香': 4,
     '金': 5,
     '角': 6,
     '馬': 8,
