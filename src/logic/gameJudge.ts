@@ -1,5 +1,4 @@
 import { Square } from '../models/BoardState';
-import { getMovablePositions } from '../logic/pieceLogic';
 
 /**
  * 指定されたプレイヤーの玉（王）が盤上に存在するかを判定する関数
@@ -24,27 +23,26 @@ export const hasKing = (board: Square[][], player: 'black' | 'white'): boolean =
  * @returns 王手状態であれば true、そうでなければ false
  */
 export const isInCheck = (board: Square[][], player: 'black' | 'white'): boolean => {
-    // 1. まずは盤面上の自分の玉の位置を探す
+    // 玉の位置を特定する
     const kingPos = board
         .flatMap((row, r) =>
             row.map((square, c) =>
                 square?.owner === player && square.type === '玉' ? [r, c] : null
             )
         )
-        .find(pos => pos !== null); // 最初に見つかった位置を取得
+        .find(pos => pos !== null);
 
-    // 2. 玉が存在しない（既に取られている）場合は、王手とは言えないので false を返す
+    // 玉が見つからなければ王手とは言えない
     if (!kingPos) return false;
 
     const [kr, kc] = kingPos;
 
-    // 3. 相手のすべての駒をチェックし、
-    //    1手で自分の玉の位置を攻撃できるものがあれば王手と判定する
+    // 相手の全駒から王の位置を攻撃できるかを調べる
     return board.some((row, r) =>
         row.some((square, c) =>
             square &&
             square.owner !== player &&
-            getMovablePositions(square, r, c, board).some(
+            square.getMovablePositions(r, c, board).some(
                 ([tr, tc]) => tr === kr && tc === kc
             )
         )

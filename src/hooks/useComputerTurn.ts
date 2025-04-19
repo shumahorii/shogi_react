@@ -2,20 +2,48 @@ import { useEffect } from 'react';
 import { Square } from '../models/BoardState';
 import { getSmartComputerDrop, getSmartComputerMove } from '../logic/ComputerPlayerAI';
 import { removeCapturedPiece } from '../logic/capturedPieceLogic';
+import { Piece } from '../models/piece/Piece'; // ← 抽象クラス
+import { Pawn } from '../models/piece/Pawn';
+import { Silver } from '../models/piece/Silver';
+import { Knight } from '../models/piece/Knight';
+import { Lance } from '../models/piece/Lance';
+import { Gold } from '../models/piece/Gold';
+import { Bishop } from '../models/piece/Bishop';
+import { Rook } from '../models/piece/Rook';
 
 /**
- * コンピュータ（後手）の手番を処理するカスタムフック
- * useEffect を使って、ターンが 'white' になったタイミングで自動的に指し手を実行する
+ * 駒の種類に応じた具象クラスのインスタンスを生成する関数
  */
+const createPieceInstance = (type: string, owner: 'black' | 'white'): Piece => {
+    switch (type) {
+        case '歩':
+            return new Pawn(owner);
+        case '銀':
+            return new Silver(owner);
+        case '桂':
+            return new Knight(owner);
+        case '香':
+            return new Lance(owner);
+        case '金':
+            return new Gold(owner);
+        case '角':
+            return new Bishop(owner);
+        case '飛':
+            return new Rook(owner);
+        default:
+            throw new Error(`未対応の駒タイプ: ${type}`);
+    }
+};
+
 export const useComputerTurn = ({
-    board,                                 // 現在の盤面状態
-    turn,                                  // 現在の手番（black/white）
-    setBoard,                              // 盤面を更新する関数
-    capturedPiecesWhite,                   // コンピュータ側の持ち駒
-    setCapturedPiecesWhite,               // 持ち駒を更新する関数
-    applyMove,                             // 駒を移動させる共通関数（捕獲・終了処理含む）
-    isGameOver,                            // ゲームが終了していれば何もしない
-    setTurn,                               // 手番を変更するための関数（主に白→黒）
+    board,
+    turn,
+    setBoard,
+    capturedPiecesWhite,
+    setCapturedPiecesWhite,
+    applyMove,
+    isGameOver,
+    setTurn,
 }: {
     board: Square[][];
     turn: 'black' | 'white';
@@ -27,34 +55,27 @@ export const useComputerTurn = ({
     setTurn: (t: 'black' | 'white') => void;
 }) => {
     useEffect(() => {
-        // 手番が white（コンピュータ）かつゲーム中の場合にのみ処理を実行
         if (turn === 'white' && !isGameOver) {
             setTimeout(() => {
-                // まず通常の駒を使った移動手を探索
                 const move = getSmartComputerMove(board);
 
                 if (move) {
-                    // 移動できる場合は applyMove に任せる
                     applyMove(move.from, move.to, move.piece);
                 } else {
-                    // 移動できない場合、持ち駒を打てる位置を探索
                     const drop = getSmartComputerDrop(board, capturedPiecesWhite);
                     if (drop) {
                         const newBoard = board.map(r => [...r]);
-                        newBoard[drop.to[0]][drop.to[1]] = {
-                            type: drop.type,
-                            owner: 'white',
-                        };
+                        const piece = createPieceInstance(drop.type, 'white');
+                        newBoard[drop.to[0]][drop.to[1]] = piece;
                         setBoard(newBoard);
 
-                        // 持ち駒を減らす
                         const updated = removeCapturedPiece(capturedPiecesWhite, drop.type);
                         setCapturedPiecesWhite(updated);
 
-                        setTurn('black'); // プレイヤーの番に交代
+                        setTurn('black');
                     }
                 }
-            }, 500); // 少し間を置いて自然な思考感を出す
+            }, 500);
         }
     }, [
         turn,

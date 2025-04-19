@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Piece } from '../models/Piece';
+import { Piece } from '../models/piece/Piece';
 
 /**
  * 成り処理の状態を管理するだけのシンプルなフック

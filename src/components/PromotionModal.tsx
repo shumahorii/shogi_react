@@ -1,5 +1,5 @@
 import React from 'react';
-import { Piece } from '../models/Piece';
+import { Piece } from '../models/piece/Piece';
 
 // Props（親コンポーネントから受け取る情報）の型定義
 interface Props {

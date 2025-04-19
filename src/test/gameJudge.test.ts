@@ -1,6 +1,6 @@
 import { hasKing, isInCheck } from '../logic/gameJudge';
 import { Square } from '../models/BoardState';
-import { Piece } from '../models/Piece';
+import { Piece } from '../models/piece/Piece';
 
 const createEmptyBoard = (): Square[][] =>
     Array.from({ length: 9 }, () => Array(9).fill(null));

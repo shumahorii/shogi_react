@@ -1,4 +1,4 @@
-import { Piece } from './Piece';
+import { Piece } from './piece/Piece';
 
 export type Square = Piece | null;
 

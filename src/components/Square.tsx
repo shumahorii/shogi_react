@@ -1,5 +1,5 @@
 import React from 'react';
-import { Piece } from '../models/Piece';
+import { Piece } from '../models/piece/Piece';
 import PieceView from './PieceView';
 
 interface Props {
